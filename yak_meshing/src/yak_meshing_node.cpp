@@ -242,19 +242,19 @@ private:
       for( size_t ndx = 0; ndx < (*polys)[i].numTriangles(); ndx++ ){
         pcl::Vertices v;
         openvdb::Vec3I *p = &((*polys)[i].triangle(ndx));
-        v.vertices.push_back(p->x()+1);
-        v.vertices.push_back(p->y()+1);
-        v.vertices.push_back(p->z()+1);
+        v.vertices.push_back(p->x());
+        v.vertices.push_back(p->y());
+        v.vertices.push_back(p->z());
         out_mesh.polygons.push_back(v);
       }
 
       for( size_t ndx = 0; ndx < (*polys)[i].numQuads(); ndx++ ){
         openvdb::Vec4I *p = &((*polys)[i].quad(ndx));
         pcl::Vertices v;
-        v.vertices.push_back(p->x()+1);
-        v.vertices.push_back(p->y()+1);
-        v.vertices.push_back(p->z()+1);
-        v.vertices.push_back(p->w()+1);
+        v.vertices.push_back(p->x());
+        v.vertices.push_back(p->y());
+        v.vertices.push_back(p->z());
+        v.vertices.push_back(p->w());
         out_mesh.polygons.push_back(v);
       }
     }
