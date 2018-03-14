@@ -54,13 +54,6 @@ namespace kfusion
       cv::eigen2cv(inputAsEigen.cast<float>().matrix(), inputAsCV);
       return Affine3f(inputAsCV);
     }
-
-//    tf::Transform KinFuServer::SwitchToVolumeFrame(tf::Transform input) {
-//      tf::Quaternion rotation = input.getRotation();
-//      tf::Vector3 translation = input.getOrigin();
-//      return tf::Transform(tf::Quaternion(-rotation.getX(), -rotation.getY(), rotation.getZ(), rotation.getW()), tf::Vector3(-translation.x(), -translation.y(), translation.z()));
-//    }
-
     
     void KinFuServer::Update()
     {
@@ -180,22 +173,27 @@ namespace kfusion
         LoadParam(params.tsdf_min_camera_movement, "tsdf_min_camera_movement");
         LoadParam(params.tsdf_trunc_dist, "tsdf_trunc_dist");
 
+        // TSDF volume parameters
         LoadParam(params.volume_dims.val[0], "volume_dims_x");
         LoadParam(params.volume_dims.val[1], "volume_dims_y");
         LoadParam(params.volume_dims.val[2], "volume_dims_z");
-
-//        LoadParam(params.volume_size.val[0], "volume_size_x");
-//        LoadParam(params.volume_size.val[1], "volume_size_y");
-//        LoadParam(params.volume_size.val[2], "volume_size_z");
         LoadParam(params.volume_resolution, "volume_resolution");
 
+        float volPosX, volPosY, volPosZ;
+        LoadParam(volPosX, "volume_pos_x");
+        LoadParam(volPosY, "volume_pos_y");
+        LoadParam(volPosZ, "volume_pos_z");
+        ROS_INFO_STREAM("volPos (params): " << volPosX << ", " << volPosY << ", " << volPosZ);
+        params.volume_pose.translation(Vec3f(volPosX, volPosY, volPosZ));
+        params.camera_pose = Affine3f::Identity();
+
+
         LoadParam(params.use_icp, "use_icp");
-        params.use_pose_hints = use_pose_hints_;
+        LoadParam(params.use_pose_hints, "use_pose_hints");
         LoadParam(params.update_via_sensor_motion, "update_via_sensor_motion");
 
         if (params.use_pose_hints)
         {
-//          tf::Transform initialPose = KinFuServer::SwitchToVolumeFrame(previous_volume_to_sensor_transform_);
           tf::Transform initialPose = previous_volume_to_sensor_transform_;
           params.camera_pose.translation(Vec3f(initialPose.getOrigin().x(), initialPose.getOrigin().y(), initialPose.getOrigin().z()));
 
@@ -216,51 +214,8 @@ namespace kfusion
           ROS_INFO_STREAM( matrix.at<float>(0) << " " << matrix.at<float>(1) << " " << matrix.at<float>(2));
           ROS_INFO_STREAM( matrix.at<float>(3) << " " << matrix.at<float>(4) << " " << matrix.at<float>(5) );
           ROS_INFO_STREAM( matrix.at<float>(6) << " " << matrix.at<float>(7) << " " << matrix.at<float>(8) << "\n");
-          //matrix.val[0] = 0;
-          params.camera_pose.linear(matrix);
-          //params.volume_pose.rotation(matrix);
-
-
-// TODO: Properly set volume pose rotation from robot end effector orientation
-//          Eigen::Matrix3d rotationEigen;
-//          tf::matrixTFToEigen(previous_volume_to_sensor_transform_.getBasis(), rotationEigen);
-//          Vec3f rotationCv;
-
-//          rotationCv[0] = previous_volume_to_sensor_transform_.getRotation()
-
-//          cv::eigen2cv(rotationEigen, rotationCv);
-//          params.volume_pose.rotation();
-
-//          Affine3f pose;
-//          previous_volume_to_sensor_transform_.getBasis().
-//          pose.rotation();
+          params.camera_pose.rotation(matrix);
         }
-        else
-        {
-          float volPosX, volPosY, volPosZ;
-          volPosX = params.volume_pose.translation().val[0];
-          volPosY = params.volume_pose.translation().val[1];
-          volPosZ = params.volume_pose.translation().val[2];
-
-          ROS_INFO_STREAM("volPos (default): " << volPosX << ", " << volPosY << ", " << volPosZ);
-
-          LoadParam(volPosX, "volume_pos_x");
-          LoadParam(volPosY, "volume_pos_y");
-          LoadParam(volPosZ, "volume_pos_z");
-          ROS_INFO_STREAM("volPos (params): " << volPosX << ", " << volPosY << ", " << volPosZ);
-          params.volume_pose.translation(Vec3f(volPosX, volPosY, volPosZ));
-          params.camera_pose = Affine3f::Identity();
-        }
-
-
-
-        ROS_INFO_STREAM("volPos (loaded): " << params.volume_pose.translation().val[0] << ", " << params.volume_pose.translation().val[1] << ", " << params.volume_pose.translation().val[2]);
-//        ROS_INFO_STREAM("translation: " << cv::Affine3f::Vec3(volPosX, volPosY, volPosZ));
-
-//        params.volume_pose.translate(-params.volume_pose.translation());
-//        params.volume_pose.translate(cv::Affine3f::Vec3(volPosX, volPosY, volPosZ));
-
-
 
         kinfu_ = KinFu::Ptr(new kfusion::KinFu(params));
         return true;
@@ -321,7 +276,6 @@ namespace kfusion
       sensor_msgs::PointCloud2 msg;
       pcl::toROSMsg(cloud, msg);
       msg.header.stamp = ros::Time::now();
-      //msg.header.frame_id = "/turn_table";
       msg.header.frame_id = baseFrame_;
 
       ROS_INFO_STREAM("publishing cloud w/ " << cloud.size() << " points.");
