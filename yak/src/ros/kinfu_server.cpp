@@ -64,13 +64,15 @@ namespace kfusion
         {
             return;
         }
+        // TODO:  when looking up the TF frame, we probably need to use the time at which the depth image was acquired,
+        //        rather than 'ros::Time::now()'.  This works okay for now, especially if ICP is turned on.
+        ros::Time t = ros::Time::now();
 
         // Once we have a new image, find the transform between the poses where the current image and the previous image were captured.
-
         if (use_pose_hints_)
         {
           tfListener_.waitForTransform(baseFrame_, cameraFrame_, ros::Time::now(), ros::Duration(0.5));
-          tfListener_.lookupTransform(baseFrame_, cameraFrame_, ros::Time(0), current_volume_to_sensor_transform_);
+          tfListener_.lookupTransform(baseFrame_, cameraFrame_, t, current_volume_to_sensor_transform_);
 
           // calculate camera motion
           tf::Transform past_to_current_sensor = previous_volume_to_sensor_transform_.inverse() * current_volume_to_sensor_transform_;

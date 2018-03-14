@@ -93,15 +93,6 @@ kfusion::KinFu::KinFu(const KinFuParams& params) :
     resetPose();
     //poses_.reserve(30000);
 
-    // if using pose hints, use the camera pose as the starting location (not the same as the volume origin/offset)
-    if(!params_.use_pose_hints)
-    {
-      poses_.push_back(Affine3f::Identity().matrix);
-    }
-    else
-    {
-      poses_.push_back(params_.camera_pose.matrix);
-    }
 }
 
 const kfusion::KinFuParams& kfusion::KinFu::params() const
@@ -173,27 +164,11 @@ void kfusion::KinFu::allocate_buffers()
 
 void kfusion::KinFu::resetPose()
 {
-
     cout << "Reset Pose" << endl;
 
-//    frame_counter_ = 0;
-
-    // TODO: Don't reset to initially-specified camera-relative pose if using a volume pose defined in a global context
+    // clear poses
     poses_.clear();
     poses_.reserve(30000);
-
-    // TODO: Allow loading of robot pose instead of default volume pose
-    if(!params_.use_pose_hints)
-    {
-      poses_.push_back(Affine3f::Identity().matrix);
-    }
-    else
-    {
-      poses_.push_back(params_.camera_pose.matrix);
-    }
-    cout << "Resetting to: " << poses_.back().matrix << endl;
-
-//    volume_->clear();
 }
 
 void kfusion::KinFu::resetVolume()
@@ -212,8 +187,6 @@ kfusion::Affine3f kfusion::KinFu::getCameraPose(int time) const
 
 pcl::PointCloud<pcl::PointXYZ> kfusion::KinFu::getCloud()
 {
-
-  //DeviceArray<pcl::PointXYZ> cloud_buffer_device_;
   DeviceArray<kfusion::Point> cloud_buffer_device_;
   DeviceArray<kfusion::Point> extracted = volume_->fetchCloud(cloud_buffer_device_);
   //kfusion::Point* points;
@@ -260,15 +233,22 @@ bool kfusion::KinFu::operator()(const Affine3f& inputCameraMotion, const Affine3
 
     cuda::waitAllDefaultStream();
 
-    //can't perform more on first frame
-    //ROS_INFO("frame_count: %d", poses_.size());
-    //if (frame_counter_ == 0)
-    if (poses_.size() == 1)
+    // if no frames have been added yet, add the first one and return
+    if (poses_.size() == 0)
     {
+      if(p.use_pose_hints)
+      {
+        poses_.push_back(currentCameraPose.matrix);
+      }
+      else
+      {
+        poses_.push_back(Affine3f::Identity().matrix);
+      }
+
         volume_->integrate(dists_, poses_.back(), p.intr);
         last_integrated_pose = poses_.back();
 
-        poses_.push_back(poses_.back());
+        //poses_.push_back(poses_.back());
 #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);
 #else
@@ -309,8 +289,6 @@ bool kfusion::KinFu::operator()(const Affine3f& inputCameraMotion, const Affine3
 
       // new camera position = last camera position * ICP motion results
       cameraPoseCorrected = poses_.back() * icpMotionResults;
-
-      //ROS_INFO_STREAM("\nMotion Input: " << cameraMotionGuess.matrix << "\nPose Input: " << currentCameraPose.matrix << "\nPose Corrected: " << cameraPoseCorrected.matrix << "\n");
     }
     else
     {
@@ -328,7 +306,7 @@ bool kfusion::KinFu::operator()(const Affine3f& inputCameraMotion, const Affine3
     }
 
     // save the latest camera pose
-    poses_.push_back(cameraPoseCorrected);
+    poses_.push_back(cameraPoseCorrected.matrix);
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Volume integration
