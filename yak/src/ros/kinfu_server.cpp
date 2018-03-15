@@ -192,7 +192,6 @@ namespace kfusion
 
         LoadParam(params.use_icp, "use_icp");
         LoadParam(params.use_pose_hints, "use_pose_hints");
-        LoadParam(params.update_via_sensor_motion, "update_via_sensor_motion");
 
         if (params.use_pose_hints)
         {

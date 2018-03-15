@@ -57,7 +57,6 @@ namespace kfusion
 
             bool use_pose_hints;
             bool use_icp;
-            bool update_via_sensor_motion;
 
     };
 

@@ -53,7 +53,6 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
 
     p.use_pose_hints = false;
     p.use_icp = true;
-    p.update_via_sensor_motion = true;
 
     return p;
 }
