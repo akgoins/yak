@@ -179,9 +179,14 @@ void kfusion::KinFu::resetVolume()
 
 kfusion::Affine3f kfusion::KinFu::getCameraPose(int time) const
 {
-    if (time > (int) poses_.size() || time < 0)
-        time = (int) poses_.size() - 1;
-    return poses_[time];
+  if(poses_.size() == 0)
+  {
+    return kfusion::Affine3f::Identity();
+  }
+
+  if (time > (int) poses_.size() || time < 0)
+      time = (int) poses_.size() - 1;
+  return poses_[time];
 }
 
 pcl::PointCloud<pcl::PointXYZ> kfusion::KinFu::getCloud()
@@ -254,7 +259,7 @@ bool kfusion::KinFu::operator()(const Affine3f& inputCameraMotion, const Affine3
         curr_.points_pyr.swap(prev_.points_pyr);
 #endif
         curr_.normals_pyr.swap(prev_.normals_pyr);
-        return true;
+        return false;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -274,6 +279,14 @@ bool kfusion::KinFu::operator()(const Affine3f& inputCameraMotion, const Affine3
       // TODO: should the guess use the last camera motion or the new TF lookup frame? Or both?
       cameraMotionGuess = inputCameraMotion;
     }
+    else
+    {
+      // If not using pose hints (TF) use the last camera motion as the guess for the new camera location
+      if(poses_.size() > 1)
+      {
+        cameraMotionGuess = poses_.at(poses_.size() - 2).inv() * poses_.back() ;
+      }
+    }
 
     {
         //ScopeTime time("icp");
@@ -285,7 +298,6 @@ bool kfusion::KinFu::operator()(const Affine3f& inputCameraMotion, const Affine3
     {
       // perform ICP using the motion estimate
       ok =  icp_->estimateTransform(cameraMotionGuess, icpMotionResults, p.intr, curr_.points_pyr, curr_.normals_pyr, prev_.points_pyr, prev_.normals_pyr);
-
       // new camera position = last camera position * ICP motion results
       cameraPoseCorrected = poses_.back() * icpMotionResults;
     }
@@ -305,7 +317,7 @@ bool kfusion::KinFu::operator()(const Affine3f& inputCameraMotion, const Affine3
     }
 
     // save the latest camera pose
-    poses_.push_back(cameraPoseCorrected.matrix);
+    poses_.push_back(cameraPoseCorrected);
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Volume integration

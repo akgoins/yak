@@ -13,14 +13,14 @@
         <rosparam>
             use_icp: True
             use_pose_hints: False
-            update_via_sensor_motion: True
+            update_via_sensor_motion: False
 
             # The node reports the transform between the fixed frame and
             # a given camera frame.
             fixed_frame: "/map"
             camera_frame: "/camera_depth_optical_frame"
 
-            # The bilateral kernel smooths the depth image and 
+            # The bilateral kernel smooths the depth image and
             # filters out noise around the edges
             bilateral_kernel_size: 4
             bilateral_sigma_depth: 0.04
@@ -29,18 +29,18 @@
             # These are parameters for the point-to-plane ICP. The
             # thresholds prevent ICP from converging to far away/inconsistent
             # data.
-            icp_angle_thresh: 0.523599
-            icp_dist_thresh: 0.1
-            icp_truncate_depth_dist: 0
+            icp_angle_thresh: 0.053599
+            icp_dist_thresh: 0.04
+            icp_truncate_depth_dist: 2.5
 
             # ICP gets performed over an image pyramid of depth. These are the
             # number of iterations performed at each pyramid size.
-            icp_iter_num : [10, 5, 4, 0]
+            icp_iter_num : [20, 10, 4, 0]
 
             # For raycasting display, this is a multiplier on how far the rays
             # march each iteration, (in multiples of voxels?) Smaller numbers
-            # are more accurate but slower. 
-            raycast_step_factor: 0.05
+            # are more accurate but slower.
+            raycast_step_factor: 0.1
 
             # This is the step size, in voxels, used to compute gradients
             # in the TSDF. Gradients are linearly interpolated between voxels.
@@ -54,25 +54,25 @@
 
             # Kinfu will only fuse data into the TSDF when the camera movement
             # exceeds this distance threshold.
-            tsdf_min_camera_movement: 0
+            tsdf_min_camera_movement: 0.0
 
             # Distance away from surface (in meters) the TSDF will be computed
             # Higher values result in smoother reconstructions, but less sharp
-            # corners and edges. Lower values result in more accurate 
+            # corners and edges. Lower values result in more accurate
             # reconstructions, but too low and noise becomes a major issue.
-            tsdf_trunc_dist: 0.0025
+            tsdf_trunc_dist: 0.04
 
             # The size of the TSDF volume in voxels
             volume_dims_x: 512
             volume_dims_y: 512
             volume_dims_z: 512
 
-            volume_resolution: 0.001
+            volume_resolution: 0.004
 
             # The position of the topmost corner of the TSDF volume in meters
-            volume_pos_x: 0.25
-            volume_pos_y: 0.25
-            volume_pos_z: -0.5
+            volume_pos_x: -0.5
+            volume_pos_y: -0.5
+            volume_pos_z: 0.0
 
 <!--            output_path: "/home/jschornak/meshes"-->
 
